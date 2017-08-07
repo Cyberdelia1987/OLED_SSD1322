@@ -39,19 +39,14 @@ Annotated and updated by Martin Falatic
 #define PIN_CS    33  // /CS signal (certain SPI can use pin 53)
                       // (can be tied low with a single display)
 #define PIN_RES   34  // /RES signal
-#define PIN_RW    35  // /WR (R/W) signal (can be tied low)
-#define PIN_E     36  // /RD (E) signal (can be tied low)
 
-int SIG_MODE = MODE_4WIRE;
+//int SIG_MODE = MODE_4WIRE;
 //int SIG_MODE = MODE_3WIRE;
-//int SIG_MODE = MODE_SPI4W;
+int SIG_MODE = MODE_SPI4W;
 
 //--------------------------------------------------------------------------
 //##########################################################################
 //--------------------------------------------------------------------------
-
-// This is slow. Really slow. (At 16 MHz anyway)
-//#define digitalPinSetVal(IOPTR, VAL) ( digitalWrite((IOPTR)->pin, VAL) )
 
 // Much more efficient!
 #define digitalPinSetVal(IOPTR, VAL) ( (VAL == LOW) ? \
@@ -63,7 +58,7 @@ struct IOMAP_Struct
   uint8_t pin;
   volatile uint8_t * reg;
   uint8_t mask;
-} IOMAP_SCLK, IOMAP_SDIN, IOMAP_RS, IOMAP_RW, IOMAP_E, IOMAP_RES, IOMAP_CS;
+} IOMAP_SCLK, IOMAP_SDIN, IOMAP_RS, IOMAP_RES, IOMAP_CS;
 
 void InitPin(struct IOMAP_Struct * IOMAP_temp, uint8_t pin)
 {
@@ -84,8 +79,6 @@ void InitStructsAndPins()
   InitPin(&IOMAP_SCLK, PIN_SCLK);
   InitPin(&IOMAP_SDIN, PIN_SDIN);
   InitPin(&IOMAP_RS,   PIN_RS);
-  InitPin(&IOMAP_RW,   PIN_RW);
-  InitPin(&IOMAP_E,    PIN_E);
   InitPin(&IOMAP_RES,  PIN_RES);
   InitPin(&IOMAP_CS,   PIN_CS);
 }
@@ -178,6 +171,8 @@ void Reset_Device()
   // Lots of reset/tweaking commands follow
   displaySend(SEND_CMD, 0xFD); // Set Command Lock (MCU protection status)
   displaySend(SEND_DAT, 0x12); // = Reset
+
+  displaySend(SEND_CMD, 0xAE); // Set Sleep mode OFF (Display ON)
   
   displaySend(SEND_CMD, 0xB3); // Set Front Clock Divider / Oscillator Frequency
   displaySend(SEND_DAT, 0xD0); // = reset / 1100b 
@@ -212,6 +207,7 @@ void Reset_Device()
   displaySend(SEND_DAT, 0x0F); // = no change
 
   displaySend(SEND_CMD, 0xB9); // Select Default Linear Gray Scale table
+  displaySend(SEND_DAT, 0x0F); // Set Gray Scale Level to GS15
 
   displaySend(SEND_CMD, 0xB1); // Set Phase Length
   displaySend(SEND_DAT, 0xE2); // = Phase 1 period (reset phase length) = 5 DCLKs, Phase 2 period (first pre-charge phase length) = 14 DCLKs
@@ -229,7 +225,7 @@ void Reset_Device()
   displaySend(SEND_CMD, 0xBE); // Set VCOMH
   displaySend(SEND_DAT, 0x07); // = 0.86 x VCC
 
-  displaySend(SEND_CMD, 0xA6); // Set Display Mode = Normal Display
+  displaySend(SEND_CMD, 0xA4); // Set Display Mode = Normal Display
 
   displaySend(SEND_CMD, 0xA9); // Exit Partial Display
 
@@ -244,7 +240,7 @@ void ClearDisplay()
   unsigned int i, j;
   
   // Turn off display while clearing (also hides noise at powerup)
-  displaySend(SEND_CMD, 0xA4); // Set Display Mode = OFF
+  displaySend(SEND_CMD, 0xA6); // Set Display Mode = OFF
 
   Set_Column_Address(0x00,0x77);
   Set_Row_Address(0x00,0x7F);
@@ -264,7 +260,7 @@ void ClearDisplay()
     }
   }
 
-  displaySend(SEND_CMD, 0xA6); // Set Display Mode = Normal Display
+  displaySend(SEND_CMD, 0xA4); // Set Display Mode = Normal Display
 }
 
 //--------------------------------------------------------------------------
@@ -346,14 +342,13 @@ void setup()
 {
   InitStructsAndPins();
   digitalPinSetVal(&IOMAP_RS,  LOW);
-  digitalPinSetVal(&IOMAP_RW,  LOW);
-  digitalPinSetVal(&IOMAP_E,   LOW);
   digitalPinSetVal(&IOMAP_RES, HIGH);
   delay(1000);
   if (SIG_MODE == MODE_SPI4W) {
     SPI.begin();
     SPI.setBitOrder(MSBFIRST);
     SPI.setClockDivider(SPI_CLOCK_DIV2);
+    SPI.setDataMode(SPI_MODE0);
     // DIV4 is almost as fast (for a 16 MHz device)
   }
   Reset_Device();
