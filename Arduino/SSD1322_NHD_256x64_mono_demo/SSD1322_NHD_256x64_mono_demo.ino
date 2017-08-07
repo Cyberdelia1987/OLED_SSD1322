@@ -225,7 +225,7 @@ void Reset_Device()
   displaySend(SEND_CMD, 0xBE); // Set VCOMH
   displaySend(SEND_DAT, 0x07); // = 0.86 x VCC
 
-  displaySend(SEND_CMD, 0xA4); // Set Display Mode = Normal Display
+  displaySend(SEND_CMD, 0xA6); // Set Display Mode = Normal Display
 
   displaySend(SEND_CMD, 0xA9); // Exit Partial Display
 
@@ -240,7 +240,7 @@ void ClearDisplay()
   unsigned int i, j;
   
   // Turn off display while clearing (also hides noise at powerup)
-  displaySend(SEND_CMD, 0xA6); // Set Display Mode = OFF
+  displaySend(SEND_CMD, 0xA4); // Set Display Mode = OFF
 
   Set_Column_Address(0x00,0x77);
   Set_Row_Address(0x00,0x7F);
@@ -260,7 +260,7 @@ void ClearDisplay()
     }
   }
 
-  displaySend(SEND_CMD, 0xA4); // Set Display Mode = Normal Display
+  displaySend(SEND_CMD, 0xA6); // Set Display Mode = Normal Display
 }
 
 //--------------------------------------------------------------------------
